@@ -5,8 +5,8 @@
  * @author Nassim Zen 
  * 
  */
-//@deno-types="./webasm/grass.d.ts"
-import {path, grass, ensureFileSync, ensureDirSync} from "./deps.ts"
+
+import {path, grass, ensureDirSync} from "./deps.ts"
 
 enum InputFormat {
 	File = "file",
@@ -43,8 +43,8 @@ class CompileResult  {
 		}
 	}
 	public to_string (option?: any) {
-		
-		return this.output
+		const grassoutput = grass(this.output, this.opts.format)
+		return grassoutput
 	}
 	public to_file (option?: FileOutputOpts) {
 		if (!this.filename) throw "filename is not defined"
