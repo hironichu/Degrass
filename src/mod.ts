@@ -70,7 +70,13 @@ class CompileResult  {
 		return file
 	}
 }
-
+/**
+ * @name compile
+ * @param data 
+ * @param input 
+ * @param options 
+ * @returns 
+ */
 
 const compile = (data: string, input?:boolean,options?: SassOptions | null,) : any => {
 	if (!options) options = {
