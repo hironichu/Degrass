@@ -6,107 +6,179 @@
  * 
  */
 
-import {path, grass, ensureDirSync} from "./deps.ts"
+import {path, grass, ensureDirSync, expandGlobSync} from "./deps.ts"
+import {InputFormat, SassOptions, FileOutputOpts} from "./types/_default.ts"
 
-enum InputFormat {
-	File = "file",
-	String = "string",
+const defaults = {
+	outfolder: "./out",
+	format: "expanded",
 }
-enum outputext {
-	min = "min.css",
-	css = ".css"
-}
-export type SassOptions = {
-	format: string
-	quiet?: boolean
-}
-export type FileOutputOpts = {
-	outputDir?: string
-	outputFileFormat?: ".min.css" | ".css" 
-}
-
-type Sass = ""
 
 class CompileResult  {
-	private output: string
-	private filename?: path.ParsedPath
+	private inputData: string | Set<{path: string, file: string}>
 	private opts: SassOptions = {
-		format: "compressed",
+		format: "expanded",
 		quiet: true
 	}
-	constructor (s: string, data:{filename?: path.ParsedPath, opts?: SassOptions}) {
-		this.output = s
-		const opts = data.opts
-		if (data.filename) this.filename = data.filename
-		if (opts) {
-			this.opts = opts
+	private outputOpts: FileOutputOpts = {
+		outputDir: "./out",
+		ext: ".css", 
+	}
+	public output: any
+	constructor (s: string | Set<{path: string, file: string}>, data:{opts?: SassOptions}) {
+		this.inputData = s
+		if (data.opts) this.opts = data.opts
+		this.outputOpts.ext = (this.opts.format === "compressed") ? ".min.css" : ".css"
+	}
+	/**
+	 * @name to_string
+	 * @description Takes the string input and returns it as a compiled Css value. If a list of folder/file is defined, it will return a set of the compiled CSS values.
+	 * @param option : any
+	 * @returns A compiled CSS string
+	 */
+	public str () {
+		if (typeof this.inputData !== "string") return this.file({}, true)
+		return this.inputData
+	}
+	/**
+	 * @name to_file
+	 * @description Takes the string input and writes it to a corresponding file.
+	 * @param option : any
+	 * @returns 
+	 */
+	public file (opts?: FileOutputOpts, nogen?: boolean) {
+		if (!this.inputData) throw "Input is not defined"
+		if (!opts) opts = this.outputOpts
+		if (opts.outputDir) {
+			ensureDirSync(opts.outputDir)
+		} else {
+			ensureDirSync(defaults.outfolder)
 		}
-	}
-	public to_string (option?: any) {
-		const grassoutput = grass(this.output, this.opts.format)
-		return grassoutput
-	}
-	public to_file (option?: FileOutputOpts) {
-		if (!this.filename) throw "filename is not defined"
-		if (option) {
-			if (option.outputDir) {
-				ensureDirSync(option.outputDir)
-			} else {
-				ensureDirSync("./")
-			}
-			if (!option.outputFileFormat) {
-				option.outputFileFormat = outputext.css
+		this.output = ""
+		const outputList = new Set<string>()
+		//Loop through the inputData set, write a CSS file for each in the default output directory if not specified in opts
+		if (typeof this.inputData === "string") {
+			const filename = (opts.name) ? opts.name : Math.random().toString(36).substring(2, 7)
+			try {
+				Deno.writeTextFileSync(path.join(Deno.cwd(),filename) + opts.ext, this.inputData, { append: false, create: true, mode: 0o666 })
+				outputList.add(path.join(Deno.cwd(),filename) + opts.ext)
+			} catch (err) {
+				throw err
 			}
 		} else {
-			option = {
-				outputDir: "./",
-				outputFileFormat: ".css"
+			for (const file of this.inputData) {
+				const fileinfo = file as {path: string, file: string}
+				const filePath = path.parse(fileinfo.path)
+				const outdir = opts.outputDir || defaults.outfolder
+				const outputFormat = this.opts.format || defaults.format
+				const outpath = path.join(Deno.cwd(), outdir, filePath.name) +  opts.ext
+				const grassoutput = grass(fileinfo.file, outputFormat)
+				if (!nogen) {
+					try {
+						Deno.writeTextFileSync(outpath, grassoutput, { append: false, create: true, mode: 0o666 })
+						outputList.add(outpath)
+					} catch (err) {
+						throw err
+					}
+				} else {
+					outputList.add(grassoutput)
+				}
 			}
 		}
-		const grassoutput = grass(this.output, this.opts.format)
-		const scssfileName = this.filename
-		const cssfileName = option.outputDir + '/' + scssfileName.name + option.outputFileFormat
-		const file = Deno.writeTextFileSync(cssfileName, grassoutput, { append: false, create: true, mode: 0o666 })
-		return file
+		return outputList
+	}
+}
+
+/**
+ * @name exists
+ * @description Checks if a file exists
+ * @param filepath : string
+ * @param opts : SassOptions
+ * @returns boolean
+ */
+const exists = (filepath: string, opts?: any) => {
+	if (!opts) opts = {
+		quiet: true
+	}
+	try {
+		Deno.openSync(filepath, { read: true, write: false });
+		return true
+	} catch (_error) {
+		return false
 	}
 }
 /**
- * @name compile
- * @param data 
- * @param input 
- * @param options 
- * @returns 
+ * @name readFolders
+ * @description Reads a folder and returns a set of files
+ * @param folders : string[]
+ * @returns Set<{path: string, file: string}>
+ */
+const readFolders = (folders: string[]): Set<{path:string, file: string}> | boolean => {
+	const fileList: Set<{path: string, file: string}> = new Set()
+	for (const fileinfo of folders) {
+		if (fileinfo.endsWith("/")) {
+			const files = expandGlobSync(fileinfo + "**/*.scss")
+			for (const file of files) {
+				fileList.add({
+					path: file.path,
+					file: Deno.readTextFileSync(file.path)
+				})
+			}
+		} else {
+			for (const file of expandGlobSync(fileinfo)) {
+				if (file.isFile && path.parse(file.path).ext === ".scss") {
+					fileList.add({
+						path: file.path,
+						file: Deno.readTextFileSync(file.path)
+					})
+				}
+				else continue;
+			}
+		}
+	}
+	if (fileList.size) {
+		return fileList
+	} else return false
+}
+
+/**
+ * @name degrass
+ * @description Takes an Sass input and converts it into a compressed CSS output
+ * @param data : string | string[]
+ * @param options : SassOptions
+ * @returns CompileResult
  */
 
-const compile = (data: string, input?:boolean,options?: SassOptions | null,) : any => {
+const degrass = (data: string | string[], options?: SassOptions) : any => {	
+	//Definition of default options
 	if (!options) options = {
-		format: "compressed",
+		format: "expanded",
 		quiet: true
-	};
-	let outputData: any
-	let inputData: any
-	inputData = (!input) ? InputFormat.String : InputFormat.File
-	let scssfileName: any
-
-	if (inputData === InputFormat.File) {
-		scssfileName = path.parse(data)
-		if (scssfileName.ext !== ".scss") {
-			throw ("File is not a scss file")
-		}
-		let file
-		try {
-			file = Deno.openSync(data, { read: true, write: false });
-		} catch (error) {
-			throw (`Could not open the requested file ${data}`)
-		}  finally {
-			if (file) file.close()
-		}
-		outputData = Deno.readTextFileSync(data);
-	} else {
-		outputData = data
 	}
-	
-	!options.quiet ? console.info(`Input size : ${outputData.length}kb`) : ''
-	return new CompileResult(outputData, (inputData !== InputFormat.File) ? {opts: options} : {filename: scssfileName, opts: options})
+	// Defition of output variables
+	let outputData: any
+	let inputData: InputFormat
+	//
+	switch (typeof data) {
+		case "string": {
+			if (exists(data, options)) {
+				const fileList: Set<{path: string, file: string}> = new Set()
+				inputData = InputFormat.Files
+				fileList.add({path: data, file: Deno.readTextFileSync(data)})
+				outputData = fileList
+			} else {
+				inputData = InputFormat.String
+				outputData = grass(data, options.format)
+			}
+		} break;
+		case "object": {
+			const fileList = readFolders(data)
+			if (typeof fileList !== 'boolean' && fileList) {
+				inputData = InputFormat.Files
+				outputData = fileList
+			}
+		} break;
+	}
+	return new CompileResult(outputData, {opts: options})
 }
-export {compile}
+export { degrass }
