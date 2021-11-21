@@ -1,4 +1,4 @@
-
+import { read_fs, is_file, is_dir } from './fileReader.js';
 
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 
@@ -91,10 +91,6 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
-
 let cachegetInt32Memory0 = null;
 function getInt32Memory0() {
     if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
@@ -102,6 +98,32 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+/**
+* @param {string} file_name
+* @param {string | undefined} format
+* @returns {string}
+*/
+export function from_file(file_name, format) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        var ptr0 = passStringToWasm0(file_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(format) ? 0 : passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        wasm.from_file(retptr, ptr0, len0, ptr1, len1);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
+
 /**
 *
 * * Parse a string of CSS into a `Css` object.
@@ -110,14 +132,14 @@ function getInt32Memory0() {
 * @param {string | undefined} format
 * @returns {string}
 */
-export function grass(p, format) {
+export function from_string(p, format) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         var ptr0 = passStringToWasm0(p, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(format) ? 0 : passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len1 = WASM_VECTOR_LEN;
-        wasm.grass(retptr, ptr0, len0, ptr1, len1);
+        wasm.from_string(retptr, ptr0, len0, ptr1, len1);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         return getStringFromWasm0(r0, r1);
@@ -141,6 +163,21 @@ function getArrayU8FromWasm0(ptr, len) {
 
 const imports = {
     __wbindgen_placeholder__: {
+        __wbg_isfile_544ff7134899b378: function(arg0, arg1) {
+            var ret = is_file(getStringFromWasm0(arg0, arg1));
+            return ret;
+        },
+        __wbg_isdir_122b332fe5007b3a: function(arg0, arg1) {
+            var ret = is_dir(getStringFromWasm0(arg0, arg1));
+            return ret;
+        },
+        __wbg_readfs_140e6799bd0303b6: function(arg0, arg1, arg2) {
+            var ret = read_fs(getStringFromWasm0(arg1, arg2));
+            var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            var len0 = WASM_VECTOR_LEN;
+            getInt32Memory0()[arg0 / 4 + 1] = len0;
+            getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+        },
         __wbindgen_string_new: function(arg0, arg1) {
             var ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);

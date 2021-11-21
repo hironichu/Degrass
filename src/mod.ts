@@ -6,9 +6,9 @@
  * 
  */
 
-import {path, grass, ensureDirSync, expandGlobSync} from "./deps.ts"
+import {path, from_string, from_file, ensureDirSync, expandGlobSync} from "./deps.ts"
 import {InputFormat, SassOptions, FileOutputOpts} from "./types/_default.ts"
-
+const ScriptURL = import.meta.url.replace(/^file:\/\//, "")
 const defaults = {
 	outfolder: "./out",
 	format: "expanded",
@@ -71,21 +71,25 @@ class CompileResult  {
 				const filePath = path.parse(fileinfo.path)
 				const outdir = opts.outputDir || defaults.outfolder
 				const outputFormat = this.opts.format || defaults.format
-				const outpath = path.join(Deno.cwd(), outdir, filePath.name) +  opts.ext
-				const grassoutput = grass(fileinfo.file, outputFormat)
+				const outdirComplete = path.join(outdir, path.relative(Deno.cwd(), filePath.dir) || "")
+				const outpath = path.join(outdirComplete, filePath.name) +  opts.ext
+				const grassoutput = !filePath.name.startsWith('_') ? from_file(fileinfo.path, outputFormat) : ""
 				if (!nogen) {
 					try {
-						Deno.writeTextFileSync(outpath, grassoutput, { append: false, create: true, mode: 0o666 })
-						outputList.add(outpath)
+						if (!filePath.name.startsWith('_')) {
+							ensureDirSync(outdirComplete)
+							Deno.writeTextFileSync(outpath, grassoutput, { append: false, create: true, mode: 0o666 })
+							outputList.add(outpath)
+						}
 					} catch (err) {
 						throw err
 					}
 				} else {
-					outputList.add(grassoutput)
+					if (grassoutput.length) outputList.add(grassoutput)
 				}
 			}
 		}
-		return outputList
+		return outputList.size ? outputList : false
 	}
 }
 
@@ -113,23 +117,21 @@ const exists = (filepath: string, opts?: any) => {
  * @param folders : string[]
  * @returns Set<{path: string, file: string}>
  */
-const readFolders = (folders: string[]): Set<{path:string, file: string}> | boolean => {
-	const fileList: Set<{path: string, file: string}> = new Set()
+const readFolders = (folders: string[]): Set<{path:string }> | boolean => {
+	const fileList: Set<{path: string}> = new Set()
 	for (const fileinfo of folders) {
 		if (fileinfo.endsWith("/")) {
 			const files = expandGlobSync(fileinfo + "**/*.scss")
 			for (const file of files) {
 				fileList.add({
-					path: file.path,
-					file: Deno.readTextFileSync(file.path)
+					path: file.path
 				})
 			}
 		} else {
 			for (const file of expandGlobSync(fileinfo)) {
 				if (file.isFile && path.parse(file.path).ext === ".scss") {
 					fileList.add({
-						path: file.path,
-						file: Deno.readTextFileSync(file.path)
+						path: file.path
 					})
 				}
 				else continue;
@@ -168,7 +170,7 @@ const degrass = (data: string | string[], options?: SassOptions) : any => {
 				outputData = fileList
 			} else {
 				inputData = InputFormat.String
-				outputData = grass(data, options.format)
+				outputData = from_string(data, options.format)
 			}
 		} break;
 		case "object": {
