@@ -7,7 +7,13 @@
 -------
 
 There are some features that doesn't work yet,
-such as @import / @use and anything that requires calling an outside file.
+~~such as @import / @use and anything that requires calling an outside file.~~
+
+## Update :
+Import are working as long as you use the .scss extension. I am working on making it work natively without it but for now it works..
+let me know if there is anything that doesn't work.
+
+I am also working on uploading the rust sources to another repo, but I need to clean some things up first.
 
 Since I used the from_string() function of the rust library, it seems like it can't figure out where to import other files (it's probably not aware of the current dir)... But I am no rust dev, I don't know !
 
