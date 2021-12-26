@@ -1,4 +1,4 @@
-import { read_fs, is_file, is_dir } from './fileReader.js';
+import { read_fs, is_file, is_dir } from './file.js';
 
 let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
 
@@ -103,18 +103,18 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 /**
-* @param {string} file_name
+* @param {string} p
 * @param {string | undefined} format
 * @returns {string}
 */
-export function from_file(file_name, format) {
+export function str(p, format) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        var ptr0 = passStringToWasm0(file_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = passStringToWasm0(p, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(format) ? 0 : passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len1 = WASM_VECTOR_LEN;
-        wasm.from_file(retptr, ptr0, len0, ptr1, len1);
+        wasm.str(retptr, ptr0, len0, ptr1, len1);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         return getStringFromWasm0(r0, r1);
@@ -125,21 +125,19 @@ export function from_file(file_name, format) {
 }
 
 /**
-*
-* * Parse a string of CSS into a `Css` object.
-**
-* @param {string} p
+* @param {string} path
 * @param {string | undefined} format
+* @param {any} options
 * @returns {string}
 */
-export function from_string(p, format) {
+export function file(path, format, options) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        var ptr0 = passStringToWasm0(p, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = passStringToWasm0(path, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         var ptr1 = isLikeNone(format) ? 0 : passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len1 = WASM_VECTOR_LEN;
-        wasm.from_string(retptr, ptr0, len0, ptr1, len1);
+        wasm.file(retptr, ptr0, len0, ptr1, len1, addHeapObject(options));
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         return getStringFromWasm0(r0, r1);
@@ -163,15 +161,15 @@ function getArrayU8FromWasm0(ptr, len) {
 
 const imports = {
     __wbindgen_placeholder__: {
-        __wbg_isfile_544ff7134899b378: function(arg0, arg1) {
+        __wbg_isfile_17f5a3da7f7b5b73: function(arg0, arg1) {
             var ret = is_file(getStringFromWasm0(arg0, arg1));
             return ret;
         },
-        __wbg_isdir_122b332fe5007b3a: function(arg0, arg1) {
+        __wbg_isdir_16002f725eb56908: function(arg0, arg1) {
             var ret = is_dir(getStringFromWasm0(arg0, arg1));
             return ret;
         },
-        __wbg_readfs_140e6799bd0303b6: function(arg0, arg1, arg2) {
+        __wbg_readfs_093bed8d4cdd5918: function(arg0, arg1, arg2) {
             var ret = read_fs(getStringFromWasm0(arg1, arg2));
             var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             var len0 = WASM_VECTOR_LEN;
@@ -182,12 +180,12 @@ const imports = {
             var ret = getStringFromWasm0(arg0, arg1);
             return addHeapObject(ret);
         },
-        __wbg_randomFillSync_64cc7d048f228ca8: function() { return handleError(function (arg0, arg1, arg2) {
-            getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
-        }, arguments) },
         __wbindgen_object_drop_ref: function(arg0) {
             takeObject(arg0);
         },
+        __wbg_randomFillSync_64cc7d048f228ca8: function() { return handleError(function (arg0, arg1, arg2) {
+            getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
+        }, arguments) },
         __wbg_getRandomValues_98117e9a7e993920: function() { return handleError(function (arg0, arg1) {
             getObject(arg0).getRandomValues(getObject(arg1));
         }, arguments) },

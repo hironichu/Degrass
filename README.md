@@ -17,7 +17,12 @@ I am also working on uploading the rust sources to another repo, but I need to c
 
 Since I used the from_string() function of the rust library, it seems like it can't figure out where to import other files (it's probably not aware of the current dir)... But I am no rust dev, I don't know !
 
+## Update 2 :
+After testing, and searching for a solution, there is still a bug when using a file path when compiling, I recommend you to use Content of the sass file to compile. Note that it will be compiled as a string, so you can't use @import or @use.
+I am still looking for a solution but there hasn't been any update on the main repo since the last time I checked.
 
+Right now i have updated the Wasm from a fork of the original repo wich has some changes and cleaner code.
+-> https://github.com/chris-morgan/grass
 
 Thanks to @connorskees who made a module that works with WASM, I was able to recompile the rust version with Deno/ts bindings, here are the sources for the original NPM module https://www.npmjs.com/package/@connorskees/grass
 
@@ -32,7 +37,7 @@ You can use the str() function to return the compiled Sass, or the file to creat
 To compile a list of file from a folder and its subfolders, here is an example
 
 ```ts
-import { degrass } from "../src/mod.ts"
+import { degrass } from "https://deno.land/x/degrass/mod.ts";
 
 
 degrass(["tests/scss_test/**/**"], { format: "compressed",}).file({

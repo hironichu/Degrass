@@ -6,7 +6,7 @@
  * 
  */
 
-import {path, from_string, from_file, ensureDirSync, expandGlobSync} from "./deps.ts"
+import {path, grass, ensureDirSync, expandGlobSync} from "./deps.ts"
 import {InputFormat, SassOptions, FileOutputOpts} from "./types/_default.ts"
 const ScriptURL = import.meta.url.replace(/^file:\/\//, "")
 const defaults = {
@@ -73,7 +73,7 @@ class CompileResult  {
 				const outputFormat = this.opts.format || defaults.format
 				const outdirComplete = path.join(outdir, path.relative(Deno.cwd(), filePath.dir) || "")
 				const outpath = path.join(outdirComplete, filePath.name) +  opts.ext
-				const grassoutput = !filePath.name.startsWith('_') ? from_file(fileinfo.path, outputFormat) : ""
+				const grassoutput = !filePath.name.startsWith('_') ? grass.file(fileinfo.path, outputFormat, {}) : ""
 				if (!nogen) {
 					try {
 						if (!filePath.name.startsWith('_')) {
@@ -170,7 +170,7 @@ const degrass = (data: string | string[], options?: SassOptions) : any => {
 				outputData = fileList
 			} else {
 				inputData = InputFormat.String
-				outputData = from_string(data, options.format)
+				outputData = grass.str(data, options.format)
 			}
 		} break;
 		case "object": {

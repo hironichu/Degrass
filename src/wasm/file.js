@@ -7,25 +7,16 @@ export function read_fs(path) {
 export function is_file(path) {
 	try {
 		const file = Deno.lstatSync(path)
-		if (file.isFile) {
-			return true
-		} else {
-			return false
-		}
+		return file.is_file
 	} catch (e) {
 		return false
 	}
 }
 
 export function is_dir(path) {
-	// console.log(path)
 	try {
-		const dir =  Deno.lstatSync(path)
-		if (file.is_dir) {
-			return true
-		} else {
-			return false
-		}
+		const file = Deno.lstatSync(path)
+		return file.is_dir
 	} catch (e) {
 		return false
 	}
